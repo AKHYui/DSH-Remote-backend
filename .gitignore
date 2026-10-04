@@ -1,0 +1,30 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+.conda/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Runtime state: the SQLite database and its WAL/SHM sidecars. Also where the
+# smoke test and the acceptance script keep their scratch databases.
+var/
+
+# Live credentials minted by the deployment helper. They are secrets: never
+# commit them, and revoke + re-mint if one ever reaches a repository.
+.deploy-secrets.json
+.mint*.txt
+.env
+
+# Logs
+*.log
+
+# Editors / OS
+.vscode/
+.idea/
+*.swp
+.DS_Store
+Thumbs.db
+Desktop.ini

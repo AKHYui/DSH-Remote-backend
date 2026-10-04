@@ -1,0 +1,12 @@
+# Keep the shell scripts LF on every platform: they run on the Linux host, and a
+# CRLF checkout would fail with `bash: $'\r': command not found` after an upload.
+*.sh text eol=lf
+# Everything else: let git normalise to LF in the repository and use the platform
+# convention on checkout.
+* text=auto
+# Binary content that must never be newline-converted.
+*.png binary
+*.jpg binary
+*.webp binary
+*.zstd binary
+*.db binary
