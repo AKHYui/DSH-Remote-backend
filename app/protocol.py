@@ -79,6 +79,12 @@ OP_SESSION_SELECT_MODEL = "session.selectModel"
 OP_USER_QUESTIONS_ANSWER = "userQuestions.answer"
 OP_FILE_UPLOADS_UPLOAD = "fileUploads.upload"
 OP_MODEL_CATALOG = "model.catalog"
+# Archiving belongs to the Host's Workspace registry, not to a Session, so these
+# are the only two ops in the list outside the `session`/`fileUploads` namespaces.
+# They are also the only *mutations* of the Host's own listing rather than of a
+# conversation.
+OP_WORKSPACE_ARCHIVE_SESSION = "workspace.archiveSession"
+OP_WORKSPACE_UNARCHIVE_SESSION = "workspace.unarchiveSession"
 
 ALLOWED_OPS = frozenset(
     {
@@ -93,6 +99,8 @@ ALLOWED_OPS = frozenset(
         OP_USER_QUESTIONS_ANSWER,
         OP_FILE_UPLOADS_UPLOAD,
         OP_MODEL_CATALOG,
+        OP_WORKSPACE_ARCHIVE_SESSION,
+        OP_WORKSPACE_UNARCHIVE_SESSION,
     }
 )
 

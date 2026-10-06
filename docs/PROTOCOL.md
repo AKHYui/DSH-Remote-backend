@@ -1,9 +1,3 @@
-> **这份文件是插件仓库与中继仓库共享的线协议契约。**
-> 两边的副本必须保持一致：中继仓库里有一条跨语言测试逐字比对 op 白名单
-> （`tests/test_protocol.py::test_python_and_plugin_op_allowlists_agree`），其余部分靠人同步。
-> 改动协议的正确顺序：改这里 → 同步另一份 → 两边同时升 `PROTOCOL_VERSION`。
-> 中继以 `backend/` 单独部署时，那条跨语言测试会自动 skip（那里没有插件那一半）。
-
 # DSH Remote Bridge — 协议规范 v1
 
 本文档是 **唯一契约**。桌面插件（`plugin/`）与 FastAPI 中继（`backend/`）都必须严格按此实现，
@@ -155,6 +149,20 @@ wss://<host>/api/v1/attach?token=<connector-token>
 | `userQuestions.answer` | `userQuestions.answer` | `{agentId, callId, answer:{answers:[{id, selected[], custom?}]}}` | 否 |
 | `fileUploads.upload` | `fileUploads.upload` | `{agentId, request:{data, name?}}` | 否 |
 | `model.catalog` | `session.modelCatalog` | `{}` | 否 |
+| `workspace.archiveSession` | `workspace.archiveSession` | `{sessionId, stopActivity?}` | 否 |
+| `workspace.unarchiveSession` | `workspace.unarchiveSession` | `{sessionId}` | 否 |
+
+**归档**：归档属于宿主的 **Workspace 注册表**，不属于会话——会话无法归档自己，也没有
+`session.archive`。也正因如此，`session.list` 必须读 `workspace.follow` 的 baseline 才知道自己
+隐藏了哪些行（见 §2.7 的 `archivedSessionIds`）。
+
+`archiveSession` 在**会话仍有工作在跑**时会以 `workspace/session-active` 拒绝，`details` 里按族
+（`turn`、`subagent`、`job`、`schedule`）列出这些工作；只有显式带 `stopActivity: true` 才会先停掉
+它们、等归档集合落盘后再返回（停止本身在后台收敛）。所以调用方的正确姿势是：先不带
+`stopActivity` 试一次，被拒时再向用户确认，然后带上它重试。
+`unarchiveSession` 只接受 `{sessionId}`，返回 `{archivedSessionIds}`（更新后的归档集合），
+调用方可以据此直接刷新本地状态而不必再拉一次列表。
+两个 op 的 `sessionId` 都会被 `allowedSessions` 白名单检查（插件读的是 `args.sessionId`）。
 
 **模型**：切换模型是**独立调用**，`session.prompt` 没有 model 参数。当前选择由
 `session.list` 的 `projections.values.modelSelection` 给出（`next` 为下一回合将使用的，
@@ -230,7 +238,7 @@ python -m app.cli pair-approve 123456 --name "我的 Pixel"
 | 方法 | 路径 | 说明 |
 |---|---|---|
 | `GET` | `/api/v1/devices` | 列出所有**曾经连过的桌面**：`{id, name, online, platform, harnessVersion, capabilities[], lastSeen, pendingRequests}` |
-| `GET` | `/api/v1/devices/{id}/sessions` | `session.list` 的便捷封装 |
+| `GET` | `/api/v1/devices/{id}/sessions` | `session.list` 的便捷封装；`?includeArchived=true` 会把**已归档**的会话也留在列表里（默认由插件移除），两种情况都会回传 `archivedSessionIds` |
 | `POST` | `/api/v1/devices/{id}/op` | `{op, args}` → `{ok:true, value}` / `{ok:false, error}` |
 | `POST` | `/api/v1/devices/{id}/stream` | `{op, args}` → **SSE** 流（见 §3.3） |
 

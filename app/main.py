@@ -362,10 +362,18 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 
     @app.get("/api/v1/devices/{device_id}/sessions")
     async def list_sessions(
-        device_id: str, _: Annotated[Device, Depends(require_device)]
+        device_id: str,
+        _: Annotated[Device, Depends(require_device)],
+        includeArchived: bool = False,
     ) -> dict[str, Any]:
         require_known_device(device_id)
-        value = await hub.request(device_id, P.OP_SESSION_LIST, {})
+        # `includeArchived` is a *bridge* control argument, not a Host one: the
+        # plugin strips its own key before wrapping the request. Asking for it makes
+        # the plugin leave archived Sessions in the list instead of removing them,
+        # which is what lets a phone offer an archived section at all. The archived
+        # id set arrives either way, as `archivedSessionIds`.
+        args: dict[str, Any] = {"includeArchived": True} if includeArchived else {}
+        value = await hub.request(device_id, P.OP_SESSION_LIST, args)
         return {"ok": True, "value": value}
 
     @app.get("/api/v1/approvals")
